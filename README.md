@@ -70,7 +70,8 @@ This dataset contains 105339 entries and 4 columns.
 |   2 | rating      | int64 |
 |   3 | timestamp   | int64 |
 
-#### Visualisasi Data Ratings
+#### Data Ratings Visualization
+![rating_plot](images/ratings.png)  
 Figure 2.0 plots the rating column of the "rating" dataframe
 
 In the "count" label, the maximum value is less than 30000.
