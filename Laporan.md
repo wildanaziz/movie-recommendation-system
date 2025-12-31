@@ -11,7 +11,7 @@ Sistem ini akan membantu pengguna menemukan film yang sesuai dengan preferensi m
 
 Metode ini bertujuan untuk memperbaiki masalah saran-saran tertentu, yang terjadi ketika data yang relevan bagi pengguna diabaikan. Metode ini mengekstrak tipe kepribadian pengguna, pengalaman menonton sebelumnya, dan data dari banyak basis data lain yang berkaitan dengan kritikus film. Hal ini difokuskan pada estimasi kesamaan komposit. Metodologi ini adalah sistem hibrida yang menggabungkan teknik penyaringan berbasis konten dan kolaboratif. Hongli LIn dkk. menyarankan sebuah proses yang disebut penyaringan kolaboratif yang didukung konten untuk memprediksi kompleksitas model dari contoh tertentu untuk setiap kandidat (CBCF). Metode ini dibagi menjadi dua tahap: "penyaringan berbasis konten", yang meningkatkan informasi tentang tinjauan skenario peserta pelatihan saat ini, dan "penyaringan kolaboratif", yang memberikan prediksi yang paling akurat. Algoritme CBCF mempertimbangkan pendekatan berbasis konten dan kolaboratif, mengatasi kedua kekurangannya secara bersamaan.[[1]](https://ieeexplore.ieee.org/document/9872515/authors#authors)
 
-**Referensi**: [Movie Recommender System Using Content-based and Collaborative Filtering](https://ieeexplore.ieee.org/document/9872515/authors#authors)
+**Referensi**: [[1] J. F. Mohammad and S. Urolagin, "Movie Recommender System Using Content-based and Collaborative Filtering," 2022 IEEE IAS Global Conference on Emerging Technologies (GlobConET), 20-22 May 2022, doi: 10.1109/GlobConET53749.2022.9872515.](https://ieeexplore.ieee.org/document/9872515/authors#authors)
 
 ## Business Understanding
 
@@ -23,14 +23,14 @@ Metode ini bertujuan untuk memperbaiki masalah saran-saran tertentu, yang terjad
 1. Mendapatkan rekomendasi film berdasarkan genre atau tema dari movies yang disukai dengan tingkat Recall@K lebih dari 80%.
 2. Mendapatkan rekomendasi film berdasarkan movies yang pernah dirating sebelumnya dengan error lebih kecil dari 50%.
 
-### Solution Approach
+### Solution Statements
 - Mengembangkan sistem rekomendasi berbasis content-based filtering yang memanfaatkan informasi genre film dengan menggunakan algoritma TF-IDF dan cosine similarity untuk membuat sistem rekomendasi film berdasarkan genre yang mirip dengan film yang disukai.
 - Mengembangkan sistem rekomendasi berbasis collaborative filtering menggunakan data rating pengguna untuk meningkatkan relevansi rekomendasi dengan menggunakan pendekatan embedding dengan TensorFlow/Keras untuk membangun model collaborative filtering dengan outcome sistem rekomendasi yang mirip dengan film yang pernah dirating sebelumnya.
 
 
 ## Data Understanding
 
-Dataset yang digunakan adalah [MovieLens](https://grouplens.org/datasets/movielens/), yang terdiri dari dua file utama:
+Dataset yang digunakan diperoleh dari [Kaggle](https://www.kaggle.com/datasets/ayushimishra2809/movielens-dataset), yang terdiri dari dua file utama:
 1. **movies.csv**: Berisi informasi mengenai judul film dan genre.
 2. **ratings.csv**: Berisi data rating yang diberikan pengguna terhadap film.
 
@@ -51,7 +51,7 @@ Jumlah data:
 - **timestamp**: Waktu ketika rating diberikan.
 
 #### Info Data movies.csv
-
+Dataset ini mengandung 10329 entri dan 3 kolom
 |   # | Column   | Non-Null Count | Dtype   |
 | --: | -------- | -------------- | ------- |
 |   0 | movieId  | 10329 non-null | int64   |
@@ -78,18 +78,67 @@ Di label "count" maksimum nilainya berada kurang dari 30000.
 
 Di label "rating" terdapat bar setelah angka 0 yang artinya banyak user yang memberi rating 0.5 menandakan rating terendah yakni 0.5.
 
+Selanjutnya, Pada grafik distribusi rating tersebut dapat dilihat bahwa mayoritas pengguna cenderung memberikan rating tinggi, dengan puncak distribusi berada pada rating 4 dan 5. Hal ini menunjukkan adanya bias positif dalam penilaian, di mana sebagian besar film dianggap cukup baik oleh pengguna. Sebaliknya, rating rendah (di bawah 3) relatif jarang diberikan, sehingga distribusi rating terlihat tidak merata. Kondisi ini mengindikasikan bahwa rata-rata rating dalam dataset kemungkinan mendekati nilai tinggi, yang dapat memengaruhi hasil sistem rekomendasi jika tidak ditangani dengan baik.
+
+Untuk mengatasi bias ini dan menghasilkan sistem rekomendasi yang optimal, saya mengombinasikan content-based filtering dan collaborative filtering. Kombinasi kedua pendekatan ini memungkinkan sistem untuk menangani bias distribusi rating, memberikan rekomendasi yang lebih relevan, dan mencakup preferensi individual maupun pola kolektif pengguna.
+
 ![movies_user_plot](images/users-movies.png)  
 Gambar 2.1 plot kolom movieId dan userId dari dataframe "rating"
 
 Terlhat jumlah user unik yang memberi rating berada di angka 6.1% dan jumlah film unik yang diberi rating lebih dari 93.9%. Data ini bersifat **many-to-many** yang berarti bahwa 1 user bisa memberi rating ke banyak movies dan 1 movies bisa diberi rating oleh banyak user
 
+#### Penanganan Missing Value
+
+`movies`
+|   # | Column      |       |
+| --: | ----------- | ----- |
+|   0 | movieId     | 0     |
+|   1 | title       | 0     |
+|   2 | genres      | 0     |
+dtype: int64
+
+`ratings`
+|   # | Column      |       |
+| --: | ----------- | ----- |
+|   0 | userId      | 0     |
+|   1 | movieId     | 0     |
+|   2 | rating      | 0     |
+|   2 | timestamp   | 0     |
+dtype: int64
+
+Pada penanganan missing value untuk movies dan ratings ini dapat dilihat bahwa tidak ada data yang bernilai null maka dari itu tidak ada data yang dihapus
+
+#### Penanganan Data Duplikat
+
+`movies`
+```Empty DataFrame
+Columns: [movieId, title, genres]
+Index: []```
+
+`ratings`
+```Empty DataFrame
+Columns: [userId, movieId, rating, timestamp]
+Index: []```
+```
+
+Pada penanganan data duplikat untuk movies dan ratings ini dapat dilihat bahwa tidak ada data yang terduplikasi maka dari itu tidak ada data yang dihapus
+
+#### Penanganan Outliers
+`kolom rating pada ratings.csv`
+```
+Jumlah outliers: 4456
+```
+
+Pada data tersebut dapat dilihat bahwa jumlah outliers pada kolom rating adalah **4456**. Pada beberapa kasus outliers yang berada diangka **4%** tidak dianggap besar dan cenderung kecil. maka pada penanganan outliers tidak akan dihapus karena membiarkan outliers bisa lebih optimal jika mereka mewakili pola perilaku pengguna yang sah dan bisa memperkaya hasil rekomendasi.
+
+
 ## Data Preparation
 
 ### Teknik yang diterapkan:
 1. **Genre ke format list**: Mengubah string genre menjadi format list untuk analisis lebih lanjut.
-2. **Pengecekan Missing Values**: Karena pada data yang didapatkan tidak terdapat missing values maka tidak ada data yang dihilangkan.
-3. **Encoding userId dan movieId**: Mengubah ID menjadi representasi numerik agar dapat digunakan dalam modeling collaborative filtering.
-4. **Pembagian data**: Membagi data menjadi training (80%) dan validation (20%).
+2. **Encoding userId dan movieId**: Mengubah ID menjadi representasi numerik agar dapat digunakan dalam modeling collaborative filtering.
+3. **Splitting data**: Membagi data menjadi training (80%) dan validation (20%).
+4. **Ekstraksi Fitur TF-IDF**: Ekstraksi Fitur TF-IDF pada data movies guna mendapatkan informasi mengenai genre yang terdapat di setiap movies dan diubah menjadi fitur yang dapat diukur kemiripannya.
 
 ### Genre ke Format List
 - Pada tahap ini genre dari setiap movies di dataframe **movies.csv** akan diubah menjadi bentuk array(list). Hal ini dilakukan untuk mempermudah akses ke genre di kolom "genres". Hasilnya sebagai berikut
@@ -104,28 +153,54 @@ Terlhat jumlah user unik yang memberi rating berada di angka 6.1% dan jumlah fil
 
 Proses ini diperlukan untuk memastikan data siap digunakan oleh algoritma machine learning dan meningkatkan performa model.
 
-### Pengecekan Missing Values
-- Karena pada dataset yang diberikan tidak terdapat missing values maka tidak ada data yang dihapus.
-
 ### Encoding userId dan movieId
 - Pada tahap ini dilakukan proses encoding pada kolom userId dan movieId kemudian dimasukkan ke kolom baru masing-masing. Hal ini dilakukan untuk merepresentasikan id user dan movie dalam format yang dapat di proses oleh model machine learning.
 
-### Pembagian data
+### Splitting data
 
-- Melakukan pemisahan pada dataframe menjadi train dan validasi dengan rasio 80:20, namun data di acak terlebih dahulu sebelum di pisah. Hal ini dilakukan supaya model dapat melakukan evaluasi pada data baru dan mencegah overfitting
+- Melakukan pemisahan pada dataframe menjadi train dan validasi dengan rasio 80:20, namun data di acak terlebih dahulu sebelum di pisah. Hal ini dilakukan supaya model dapat melakukan evaluasi pada data baru serta mencegah overfitting
 
-## Modeling
+`Mengacak Data`
+|        | userId | movieId | rating | user_id | movie_id |
+|--------|--------|---------|--------|---------|----------|
+| 41032  | 285    | 2605    | 3.0    | 284     | 1575     |
+| 1938   | 24     | 897     | 4.0    | 23      | 1118     |
+| 92480  | 607    | 4016    | 4.0    | 606     | 318      |
+| 30160  | 219    | 3981    | 2.0    | 218     | 2522     |
+| 28079  | 203    | 546     | 2.0    | 202     | 407      |
+| ...    | ...    | ...     | ...    | ...     | ...      |
+| 54886  | 402    | 780     | 2.5    | 401     | 34       |
+| 76820  | 541    | 2334    | 4.0    | 540     | 2489     |
+| 103694 | 668    | 55288   | 2.5    | 667     | 2733     |
+| 860    | 11     | 377     | 3.0    | 10      | 19       |
+| 15795  | 128    | 3753    | 3.0    | 127     | 1983     |
 
-### Content-Based Filtering
-- **Pendekatan**: Menggunakan TF-IDF untuk mengekstraksi fitur dari genre film, diikuti oleh perhitungan cosine similarity.
-- **Output**: Top-N rekomendasi film berdasarkan kesamaan genre dengan input film yang diberikan.
+`Splitting Data`
 
-Teknik **Content-Based Filtering** merupakan teknik sistem rekomendasi untuk merekomendasikan suatu produk yang memiliki kemiripan dengan produk yang disukai. Dalam kasus ini sistem akan merekomendasikan movies berdasarkan kemiripan genre dengan movies yang disukai pengguna. Teknik ini menggunakan rumus **Cosine Similarity** untuk mendapatkan kecocokan antara produk 1 dengan yang lain.
+```
+X_train shape:  (84271, 2)
+X_val shape:  (21068, 2)
+y_train shape:  (84271,)
+y_val shape:  (21068,)
+Training data:          user_id  movie_id
+41032       284      1575
+1938         23      1118
+92480       606       318
+30160       218      2522
+28079       202       407
+...         ...       ...
+54886       401        34
+76820       540      2489
+103694      667      2733
+860          10        19
+15795       127      1983
 
-Formula untuk **Cosine Similarity** adalah:  
-$\displaystyle cos~(\theta) = \frac{A \cdot B}{\|A\| \|B\|}$
+[105339 rows x 2 columns]
+Target data:  [0.55555556 0.77777778 0.77777778 ... 0.44444444 0.55555556 0.55555556]
+```
 
-Teknik ini menggunakan model **TF-IDF Vectorizer** untuk mendapatkan informasi mengenai genre yang terdapat di setiap movies dan diubah menjadi fitur yang dapat diukur kemiripannya. Contohnya adalah sebagai berikut
+### Fitur Ekstraksi TF-IDF
+- Pada tahap ini fitur ekstraksi TF-IDF, sebelum proses modelling terutama content based filtering digunakan sebagai jembatan antara data teks mentah dan model rekomendasi dengan cara memberikan representasi yang bermakna dan relevan, sekaligus mengurangi noise dari data teks. Sejalan dengan hal itu guna mendapatkan informasi mengenai genre yang terdapat di setiap movies dan diubah menjadi fitur yang dapat diukur kemiripannya. Contohnya adalah sebagai berikut
 
 | Title                                                       | horror | war | comedy | western | romance | drama | musical | sci  | thriller |
 |-------------------------------------------------------------|--------|-----|--------|---------|---------|-------|---------|------|----------|
@@ -135,7 +210,19 @@ Teknik ini menggunakan model **TF-IDF Vectorizer** untuk mendapatkan informasi m
 | Ghost of Frankenstein, The (1942)                           | 0.0    | 1.0 | 0.0    | 0.0     | 0.000000 | 0.0   | 0.000000 | 0.0  | 0.00000  |
 | Most Hated Family in America, The (2007)                    | 0.0    | 0.0 | 0.0    | 0.0     | 0.000000 | 0.0   | 0.000000 | 0.0  | 0.00000  |
 
-Selanjutnya **Cosine Similarity** akan diterapkan pada dataframe movies yang telah dibersihkan sehingga menghasilkan output sebagai berikut:
+
+## Modeling
+
+### Content-Based Filtering
+- **Pendekatan**: Menggunakan TF-IDF yang sebelumnya telah di fitur ekstraksi dari genre film kemudian diikuti dengan perhitungan cosine similarity.
+- **Output**: Top-N rekomendasi film berdasarkan kesamaan genre dengan input film yang diberikan.
+
+Teknik **Content-Based Filtering** merupakan teknik sistem rekomendasi untuk merekomendasikan suatu produk yang memiliki kemiripan dengan produk yang disukai. Dalam kasus ini sistem akan merekomendasikan movies berdasarkan kemiripan genre dengan movies yang disukai pengguna. Teknik ini menggunakan rumus **Cosine Similarity** untuk mendapatkan kecocokan antara produk 1 dengan yang lain.
+
+Formula untuk **Cosine Similarity** adalah:  
+$\displaystyle cos~(\theta) = \frac{A \cdot B}{\|A\| \|B\|}$
+
+Setelah sebelumnya pada data preparation sudah melakukan fitur ekstraksi TF-IDF. Langkah selanjutnya **Cosine Similarity** akan diterapkan pada dataframe movies yang telah dibersihkan sehingga menghasilkan output sebagai berikut:
 
 | Title                                                      | Guilty as Sin (1993) | Girl Who Kicked the Hornet's Nest, The (Luftslottet som sprängdes) (2009) | Leopard Man, The (1943) | American Haunting, An (2005) | Chain Reaction (1996) | Fellini Satyricon (1969) | Hereafter (2010) | Tetsuo, the Ironman (Tetsuo) (1988) | Attack the Block (2011) | Stone (2010) |
 |------------------------------------------------------------|----------------------|----------------------------------------------------------------------------|------------------------|-----------------------------|-----------------------|--------------------------|------------------|-------------------------------------|-------------------------|--------------|
@@ -192,15 +279,15 @@ Proyek ini menggunakan model **RecommenderNet** yang dibuat dari kelas **Model**
 
 Kita ambil user secara acak dari dataframe ratings
 ```
-Showing recommendations for user: 521
+Showing recommendations for user: 536
 ========================================
 Movies with high ratings from user
 ----------------------------------------
-True Lies (1994) : Action, Adventure, Comedy, Romance, Thriller
-For Love or Money (1993) : Comedy, Romance
-Much Ado About Nothing (1993) : Comedy, Romance
-Sleepless in Seattle (1993) : Comedy, Drama, Romance
-Mission: Impossible (1996) : Action, Adventure, Mystery, Thriller
+Godfather, The (1972) : Crime, Drama
+Godfather: Part II, The (1974) : Crime, Drama
+Airplane! (1980) : Comedy
+American Graffiti (1973) : Comedy, Drama
+Band of Brothers (2001) : Action, Drama, War
 ----------------------------------------
 ```
 Kemudian akan diambil semua movies yang belum dilihat oleh user, lalu model akan melakukan prediksi berdasarkan movies dengan rating tinggi oleh user dan kemiripannya dengan user lain. Hasilnya akan mendapatkan rekomendasi sebagai berikut
@@ -208,11 +295,11 @@ Kemudian akan diambil semua movies yang belum dilihat oleh user, lalu model akan
 ```
 Top 10 movies recommendations
 ----------------------------------------
-Grumpier Old Men (1995) : Comedy, Romance
-Turbo: A Power Rangers Movie (1997) : Action, Adventure, Children
-Take the Money and Run (1969) : Comedy, Crime
-Sixteen Candles (1984) : Comedy, Romance
-Fast Food, Fast Women (2000) : Comedy, Romance
+Jury Duty (1995) : Comedy
+City of Industry (1997) : Crime, Thriller
+Liar Liar (1997) : Comedy
+Killing of Sister George, The (1968) : Drama
+Tale of Springtime, A (Conte de Printemps) (1990) : Drama, Romance
 ```
 
 Berdasarkan hasil rekomendasi tersebut menunjukkan movies yang relevan dengan movies yang telah dirating sebelumnya. Rekomendasi yang diberikan juga bervariasi dan tidak hanya terpatok pada beberapa genres tertentu tidak seperti **Content-Based Filtering**.
@@ -290,11 +377,14 @@ i = urutan data
 n = jumlah data
 Berikut plot MAE dari model
 
-![model_plot](images/model_metrics_mae.png  
+![model_plot](images/model_metrics_mae.png)  
 Gambar 3.0 plot MAE dari model
 
 Dapat dilihat model ini memiliki nilai MAE yang relatif rendah yaitu kurang dari 20% dan tidak mengalami overfitting karena antara data train dan data test tidak memiliki ketimpangan hingga 10% sehingga cocok untuk melakukan prediksi pada data baru.
 
+## Kesimpulan
+Sistem rekomendasi film yang telah didevelop sedemikian rupa berhasil memenuhi problem statements dan goals yang dirumuskan. Sistem ini mampu memberikan rekomendasi film berdasarkan genre yang disukai pengguna melalui pendekatan content-based filtering menggunakan algoritma TF-IDF dan cosine similarity, sehingga menghasilkan rekomendasi yang relevan dengan preferensi genre pengguna. Selain itu, sistem juga berhasil memanfaatkan data rating pengguna untuk memberikan rekomendasi yang lebih personalisasi melalui pendekatan collaborative filtering. Model ini dibangun dengan embedding menggunakan TensorFlow/Keras, yang memungkinkan identifikasi pola kesamaan preferensi di antara pengguna. Hasil pengujian menunjukkan bahwa sistem content-based filtering mencapai tingkat Recall@K lebih dari 80%, sementara sistem collaborative filtering mampu memberikan prediksi rating dengan tingkat error lebih kecil dari 50%. Pencapaian ini menunjukkan bahwa solusi yang dirancang tidak hanya berhasil mencapai tujuan yang diharapkan, tetapi juga memberikan dampak positif dengan meningkatkan relevansi dan kualitas rekomendasi, sehingga mampu menghadirkan pengalaman yang lebih baik bagi pengguna dalam menemukan film yang sesuai dengan preferensi mereka.
+
 ## References
 
-###### [1] J F Mohammad, B Al Faruq1, S Urolagin, "Movie Recommender System Using Content-based and Collaborative Filtering", 2022_ https://ieeexplore.ieee.org/document/9872515/authors#authors
+###### [[1] J. F. Mohammad and S. Urolagin, "Movie Recommender System Using Content-based and Collaborative Filtering," 2022 IEEE IAS Global Conference on Emerging Technologies (GlobConET), 20-22 May 2022, doi: 10.1109/GlobConET53749.2022.9872515.](https://ieeexplore.ieee.org/document/9872515/authors#authors)
